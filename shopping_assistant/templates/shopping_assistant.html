@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Shopping Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff6b35;
+            --secondary-color: #f7931e;
+            --accent-color: #ff9500;
+            --success-color: #28a745;
+            --info-color: #17a2b8;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .phase-indicator {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .phase-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem;
+            position: relative;
+        }
+
+        .step.active {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+
+        .step.completed {
+            color: #90EE90;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: -50%;
+            top: 50%;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%);
+        }
+
+        .chat-container {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .conversation-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.agent {
+            text-align: left;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .message.agent .message-bubble {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+
+        .input-area {
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+
+        .shopping-list {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .shopping-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        .shopping-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .status-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-idle { background: #6c757d; color: white; }
+        .status-working { background: var(--primary-color); color: white; }
+        .status-waiting { background: var(--warning-color); color: black; }
+        .status-completed { background: var(--success-color); color: white; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Intelligent Shopping Assistant
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="main-container">
+            <!-- Phase Indicator -->
+            <div class="phase-indicator">
+                <h4><i class="fas fa-compass me-2"></i>Shopping Journey Progress</h4>
+                <div class="phase-steps">
+                    <div class="step" id="step-discovery">
+                        <i class="fas fa-search fa-2x"></i>
+                        <div>Discovery</div>
+                    </div>
+                    <div class="step" id="step-inspiration">
+                        <i class="fas fa-lightbulb fa-2x"></i>
+                        <div>Inspiration</div>
+                    </div>
+                    <div class="step" id="step-research">
+                        <i class="fas fa-globe fa-2x"></i>
+                        <div>Research</div>
+                    </div>
+                    <div class="step" id="step-comparison">
+                        <i class="fas fa-chart-bar fa-2x"></i>
+                        <div>Comparison</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Summary -->
+            <div id="activity-summary" class="p-3 bg-light border-bottom" style="display: none;">
+                <h6><i class="fas fa-target me-2"></i>Your Activity</h6>
+                <div id="activity-description" class="text-muted"></div>
+            </div>
+
+            <!-- Shopping List -->
+            <div id="shopping-list-container" style="display: none;">
+                <div class="shopping-list">
+                    <h6><i class="fas fa-list me-2"></i>Your Shopping List</h6>
+                    <div id="shopping-items"></div>
+                </div>
+            </div>
+
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <div class="conversation-area" id="conversation-area">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-robot fa-3x mb-3"></i>
+                        <h5>Welcome to your Intelligent Shopping Assistant!</h5>
+                        <p>Click "Start Shopping Journey" to begin discovering what you need.</p>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <div class="input-group">
+                        <input type="text" id="user-input" class="form-control" 
+                               placeholder="Click 'Start Shopping Journey' first to begin..." disabled>
+                        <button class="btn btn-primary" id="send-btn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <button class="btn btn-primary btn-lg w-100" id="start-btn">
+                            <i class="fas fa-play me-2"></i>Start Shopping Journey
+                        </button>
+                        <div id="session-status" class="text-center mt-2 text-muted" style="display: none;">
+                            <i class="fas fa-spinner fa-spin me-1"></i>Starting session...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Indicators -->
+            <div class="status-indicators">
+                <div class="status-item">
+                    <div><i class="fas fa-search"></i> Discovery Agent</div>
+                    <span class="status-badge status-idle" id="discovery-status">Idle</span>
+                </div>
+                <div class="status-item">
+                    <div><i class="fas fa-lightbulb"></i> Inspiration Agent</div>
+                    <span class="status-badge status-idle" id="inspiration-status">Idle</span>
+                </div>
+                <div class="status-item">
+                    <div><i class="fas fa-globe"></i> Research Agent</div>
+                    <span class="status-badge status-idle" id="research-status">Idle</span>
+                </div>
+                <div class="status-item">
+                    <div><i class="fas fa-chart-bar"></i> Comparison Agent</div>
+                    <span class="status-badge status-idle" id="comparison-status">Idle</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        class ShoppingAssistantUI {
+            constructor() {
+                this.socket = io();
+                this.sessionId = null;
+                this.currentPhase = 'discovery';
+                this.isProcessing = false;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.connectSocket();
+            }
+
+            initializeElements() {
+                this.startBtn = document.getElementById('start-btn');
+                this.userInput = document.getElementById('user-input');
+                this.sendBtn = document.getElementById('send-btn');
+                this.conversationArea = document.getElementById('conversation-area');
+                this.activitySummary = document.getElementById('activity-summary');
+                this.activityDescription = document.getElementById('activity-description');
+                this.shoppingListContainer = document.getElementById('shopping-list-container');
+                this.shoppingItems = document.getElementById('shopping-items');
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startSession());
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.userInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !this.isProcessing) {
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            connectSocket() {
+                this.socket.on('connect', () => {
+                    console.log('Connected to server');
+                });
+
+                this.socket.on('agent_response', (data) => {
+                    this.handleAgentResponse(data);
+                });
+
+                this.socket.on('error', (data) => {
+                    this.addMessage('system', `Error: ${data.message}`, 'error');
+                    this.setProcessing(false);
+                });
+            }
+
+            async startSession() {
+                try {
+                    const response = await fetch('/api/start-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    this.sessionId = data.session_id;
+                    
+                    // Join socket room
+                    this.socket.emit('join_session', { session_id: this.sessionId });
+                    
+                    // Enable input
+                    this.userInput.disabled = false;
+                    this.sendBtn.disabled = false;
+                    this.startBtn.style.display = 'none';
+                    
+                    // Clear welcome message and add initial message
+                    this.conversationArea.innerHTML = '';
+                    this.addMessage('system', 'Shopping session started! Our Discovery Agent will help you identify what you\'re planning to do. What activity or project are you planning?', 'info');
+                    
+                    this.updatePhase('discovery');
+                    this.updateAgentStatus('discovery', 'working');
+
+                } catch (error) {
+                    console.error('Error starting session:', error);
+                    this.addMessage('system', 'Failed to start session. Please try again.', 'error');
+                }
+            }
+
+            async sendMessage() {
+                if (this.isProcessing || !this.userInput.value.trim()) return;
+
+                const message = this.userInput.value.trim();
+                this.userInput.value = '';
+                
+                // Add user message to conversation
+                this.addMessage('user', message);
+                this.setProcessing(true);
+
+                try {
+                    const response = await fetch('/api/send-message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: this.sessionId,
+                            message: message
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to send message');
+                    }
+
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    this.addMessage('system', 'Failed to send message. Please try again.', 'error');
+                    this.setProcessing(false);
+                }
+            }
+
+            handleAgentResponse(data) {
+                this.addMessage('agent', data.response, 'success');
+                
+                // Update phase if changed
+                if (data.phase !== this.currentPhase) {
+                    this.updatePhase(data.phase);
+                }
+
+                // Update activity summary
+                if (data.activity) {
+                    this.updateActivitySummary(data.activity);
+                }
+
+                // Update shopping list
+                if (data.shopping_list && data.shopping_list.length > 0) {
+                    this.updateShoppingList(data.shopping_list);
+                }
+
+                this.setProcessing(false);
+            }
+
+            addMessage(sender, content, type = 'info') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                let icon = '';
+                if (sender === 'user') icon = '<i class="fas fa-user me-2"></i>';
+                else if (sender === 'agent') icon = '<i class="fas fa-robot me-2"></i>';
+                else if (sender === 'system') icon = '<i class="fas fa-info-circle me-2"></i>';
+
+                messageDiv.innerHTML = `
+                    <div class="message-bubble">
+                        ${icon}${content}
+                        <div class="text-muted mt-1" style="font-size: 0.8em;">
+                            ${new Date().toLocaleTimeString()}
+                        </div>
+                    </div>
+                `;
+
+                this.conversationArea.appendChild(messageDiv);
+                this.conversationArea.scrollTop = this.conversationArea.scrollHeight;
+            }
+
+            updatePhase(phase) {
+                // Remove active class from all steps
+                document.querySelectorAll('.step').forEach(step => {
+                    step.classList.remove('active');
+                });
+
+                // Mark previous steps as completed
+                const phases = ['discovery', 'inspiration', 'research', 'comparison'];
+                const currentIndex = phases.indexOf(phase);
+                
+                for (let i = 0; i < currentIndex; i++) {
+                    document.getElementById(`step-${phases[i]}`).classList.add('completed');
+                }
+
+                // Mark current step as active
+                if (phase !== 'completed') {
+                    document.getElementById(`step-${phase}`).classList.add('active');
+                }
+
+                // Update agent statuses
+                this.updateAllAgentStatuses(phase);
+                
+                this.currentPhase = phase;
+            }
+
+            updateAllAgentStatuses(activePhase) {
+                const statuses = {
+                    'discovery': 'idle',
+                    'inspiration': 'idle',
+                    'research': 'idle',
+                    'comparison': 'idle'
+                };
+
+                if (activePhase === 'discovery') {
+                    statuses.discovery = 'working';
+                } else if (activePhase === 'inspiration') {
+                    statuses.discovery = 'completed';
+                    statuses.inspiration = 'working';
+                } else if (activePhase === 'research') {
+                    statuses.discovery = 'completed';
+                    statuses.inspiration = 'completed';
+                    statuses.research = 'working';
+                } else if (activePhase === 'comparison') {
+                    statuses.discovery = 'completed';
+                    statuses.inspiration = 'completed';
+                    statuses.research = 'completed';
+                    statuses.comparison = 'working';
+                } else if (activePhase === 'completed') {
+                    Object.keys(statuses).forEach(key => statuses[key] = 'completed');
+                }
+
+                Object.keys(statuses).forEach(agent => {
+                    this.updateAgentStatus(agent, statuses[agent]);
+                });
+            }
+
+            updateAgentStatus(agent, status) {
+                const statusElement = document.getElementById(`${agent}-status`);
+                if (statusElement) {
+                    statusElement.className = `status-badge status-${status}`;
+                    
+                    const statusText = {
+                        'idle': 'Idle',
+                        'working': 'Working',
+                        'waiting': 'Waiting',
+                        'completed': 'Completed'
+                    };
+                    
+                    statusElement.textContent = statusText[status] || status;
+                    
+                    if (status === 'working') {
+                        statusElement.innerHTML = '<span class="loading-spinner me-1"></span>Working';
+                    }
+                }
+            }
+
+            updateActivitySummary(activity) {
+                this.activityDescription.textContent = activity;
+                this.activitySummary.style.display = 'block';
+            }
+
+            updateShoppingList(items) {
+                this.shoppingItems.innerHTML = '';
+                items.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'shopping-item';
+                    itemDiv.innerHTML = `
+                        <span class="me-2">${index + 1}.</span>
+                        <i class="fas fa-shopping-bag me-2 text-success"></i>
+                        <span>${item}</span>
+                    `;
+                    this.shoppingItems.appendChild(itemDiv);
+                });
+                this.shoppingListContainer.style.display = 'block';
+            }
+
+            setProcessing(processing) {
+                this.isProcessing = processing;
+                this.userInput.disabled = processing;
+                this.sendBtn.disabled = processing;
+                
+                if (processing) {
+                    this.sendBtn.innerHTML = '<span class="loading-spinner"></span>';
+                } else {
+                    this.sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                }
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ShoppingAssistantUI();
+        });
+    </script>
+</body>
+</html>
